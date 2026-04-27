@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SF Permission Diff — Salesforce XML Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f10;
+    --bg2: #16161a;
+    --bg3: #1e1e24;
+    --bg4: #26262e;
+    --border: #2e2e38;
+    --border2: #3a3a48;
+    --text: #e8e8f0;
+    --text2: #9898aa;
+    --text3: #5a5a70;
+    --accent: #6e56cf;
+    --accent2: #8b6eff;
+    --green: #22c55e;
+    --green-bg: #0d2818;
+    --amber: #f59e0b;
+    --amber-bg: #2a1f00;
+    --red: #ef4444;
+    --red-bg: #2a0a0a;
+    --blue: #3b82f6;
+    --blue-bg: #0a1628;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .logo-text {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .logo-sub {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+  .privacy-pill {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--green);
+    background: var(--green-bg);
+    border: 1px solid #1a4a2a;
+    border-radius: 99px;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .privacy-pill::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Main */
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px; }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    width: fit-content;
+    margin-bottom: 28px;
+  }
+  .tab {
+    padding: 7px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    background: var(--bg4);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  /* Input panels */
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .input-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .input-panel:focus-within {
+    border-color: var(--border2);
+  }
+  .panel-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text2);
+  }
+  .panel-label.a { color: var(--accent2); }
+  .panel-label.b { color: #22d3ee; }
+  .panel-type {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text3);
+    background: var(--bg3);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .panel-type.detected {
+    color: var(--green);
+    background: var(--green-bg);
+  }
+  textarea {
+    width: 100%;
+    height: 200px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    padding: 14px;
+    resize: vertical;
+    outline: none;
+  }
+  textarea::placeholder { color: var(--text3); }
+
+  /* Action bar */
+  .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .btn-run {
+    padding: 10px 24px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .btn-run:hover { background: var(--accent2); }
+  .btn-run:active { transform: scale(0.98); }
+  .btn-sample {
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: all 0.15s;
+  }
+  .btn-sample:hover { border-color: var(--border2); color: var(--text); }
+  .btn-clear {
+    padding: 10px 14px;
+    background: transparent;
+    color: var(--text3);
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .btn-clear:hover { color: var(--text2); }
+
+  /* Results */
+  #results { display: none; }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 600;
+    font-family: var(--mono);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .c-green { color: var(--green); }
+  .c-amber { color: var(--amber); }
+  .c-red { color: var(--red); }
+  .c-blue { color: var(--blue); }
+
+  /* Progress bar (migration mode) */
+  .migration-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 28px;
+    display: none;
+  }
+  .migration-bar.show { display: block; }
+  .mig-label {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text2);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .mig-track {
+    height: 8px;
+    background: var(--bg4);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .mig-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 99px;
+    transition: width 0.6s ease;
+  }
+  .mig-verdict {
+    margin-top: 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  /* Section */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section-head {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+  }
+  .section-head:hover { background: var(--bg3); }
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .count-red { background: var(--red-bg); color: var(--red); }
+  .count-amber { background: var(--amber-bg); color: var(--amber); }
+  .count-green { background: var(--green-bg); color: var(--green); }
+  .count-blue { background: var(--blue-bg); color: var(--blue); }
+  .count-gray { background: var(--bg4); color: var(--text2); }
+  .chevron { color: var(--text3); font-size: 12px; transition: transform 0.2s; }
+  .section.collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { border-top: 1px solid var(--border); }
+  .section.collapsed .section-body { display: none; }
+
+  /* Table */
+  .perm-table { width: 100%; border-collapse: collapse; }
+  .perm-table th {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text3);
+    padding: 8px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+    font-weight: 400;
+  }
+  .perm-table th:not(:first-child) { text-align: center; width: 90px; }
+  .perm-table td {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .perm-table tr:last-child td { border-bottom: none; }
+  .perm-table td:not(:first-child) { text-align: center; }
+  .perm-table tr:hover td { background: var(--bg3); }
+  .name-cell { color: var(--text); word-break: break-all; }
+  .sub-name { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .val-yes { color: var(--green); }
+  .val-no { color: var(--text3); }
+  .val-missing { color: var(--red); font-style: italic; }
+  .val-diff { color: var(--amber); }
+  .status-pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 99px;
+    font-size: 10px;
+  }
+  .pill-migrated { background: var(--green-bg); color: var(--green); }
+  .pill-missing { background: var(--red-bg); color: var(--red); }
+  .pill-partial { background: var(--amber-bg); color: var(--amber); }
+  .pill-diff { background: var(--amber-bg); color: var(--amber); }
+  .pill-same { background: var(--bg4); color: var(--text2); }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    background: var(--bg3);
+  }
+  .filt {
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-family: var(--mono);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.1s;
+  }
+  .filt:hover, .filt.on { background: var(--bg4); color: var(--text); border-color: var(--border2); }
+
+  /* Empty/error */
+  .empty { padding: 48px; text-align: center; color: var(--text3); font-family: var(--mono); font-size: 12px; }
+  .error-msg {
+    background: var(--red-bg);
+    border: 1px solid #3a1010;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--red);
+    margin-bottom: 16px;
+  }
+
+  /* Export */
+  .export-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-export {
+    padding: 8px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-export:hover { border-color: var(--border2); color: var(--text); }
+
+  @media (max-width: 700px) {
+    .input-grid { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-mark">SF</div>
+    <div>
+      <div class="logo-text">Permission Diff</div>
+      <div class="logo-sub">Salesforce XML Analyzer</div>
+    </div>
+  </div>
+  <div class="privacy-pill">runs locally — no data leaves your browser</div>
+</header>
+
+<main class="main">
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="tab active" onclick="setMode('migration')">Migration Check</button>
+    <button class="tab" onclick="setMode('diff')">General Diff</button>
+  </div>
+
+  <!-- Description -->
+  <p id="mode-desc" style="font-size:13px;color:var(--text2);margin-bottom:20px;font-family:var(--mono);">
+    Paste a Profile XML and its target Permission Set XML to see what's migrated, missing, or changed.
+  </p>
+
+  <!-- Error -->
+  <div id="error-box" class="error-msg" style="display:none;"></div>
+
+  <!-- Input -->
+  <div class="input-grid">
+    <div class="input-panel">
+      <div class="panel-header">
+        <span class="panel-label a" id="label-a">Profile XML</span>
+        <span class="panel-type" id="type-a">paste XML</span>
+      </div>
+      <textarea id="xml-a" placeholder="Paste your .profile or .permissionset XML here..."></textarea>
+    </div>
+    <div class="input-panel">
+      <div class="panel-header">
+        <span class="panel-label b" id="label-b">Permission Set XML</span>
+        <span class="panel-type" id="type-b">paste XML</span>
+      </div>
+      <textarea id="xml-b" placeholder="Paste your target .permissionset XML here..."></textarea>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-run" onclick="analyze()">Analyze →</button>
+    <button class="btn-sample" onclick="loadSample()">load sample</button>
+    <button class="btn-clear" onclick="clearAll()">clear</button>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <div class="summary-grid" id="summary-grid"></div>
+
+    <div class="migration-bar" id="mig-bar">
+      <div class="mig-label">
+        <span>Migration progress</span>
+        <span id="mig-pct">0%</span>
+      </div>
+      <div class="mig-track"><div class="mig-fill" id="mig-fill" style="width:0%"></div></div>
+      <div class="mig-verdict" id="mig-verdict"></div>
+    </div>
+
+    <div id="sections-container"></div>
+
+    <div class="export-bar">
+      <button class="btn-export" onclick="exportCSV()">export CSV</button>
+      <button class="btn-export" onclick="exportJSON()">export JSON</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+let currentMode = 'migration';
+let lastResult = null;
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&m==='migration')||(i===1&&m==='diff')));
+  if (m === 'migration') {
+    document.getElementById('label-a').textContent = 'Profile XML';
+    document.getElementById('label-b').textContent = 'Permission Set XML';
+    document.getElementById('mode-desc').textContent = 'Paste a Profile XML and its target Permission Set XML to see what\'s migrated, missing, or changed.';
+  } else {
+    document.getElementById('label-a').textContent = 'XML — Left';
+    document.getElementById('label-b').textContent = 'XML — Right';
+    document.getElementById('mode-desc').textContent = 'Compare any two Salesforce permission XMLs (profile or permission set) and see their semantic differences.';
+  }
+  clearResults();
+}
+
+function clearResults() {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+}
+
+function clearAll() {
+  document.getElementById('xml-a').value = '';
+  document.getElementById('xml-b').value = '';
+  document.getElementById('type-a').textContent = 'paste XML';
+  document.getElementById('type-b').textContent = 'paste XML';
+  document.getElementById('type-a').className = 'panel-type';
+  document.getElementById('type-b').className = 'panel-type';
+  clearResults();
+}
+
+function detectType(xml) {
+  if (!xml.trim()) return null;
+  if (xml.includes('<Profile ') || xml.includes('<Profile>') || xml.includes('xmlns="urn:metadata.tooling.soap.sforce.com"')) return 'Profile';
+  if (xml.includes('<PermissionSet ') || xml.includes('<PermissionSet>')) return 'PermissionSet';
+  if (xml.includes('<objectPermissions>') || xml.includes('<fieldPermissions>') || xml.includes('<userPermissions>')) return 'Unknown (SF XML)';
+  return null;
+}
+
+function parseXML(str) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(str.trim(), 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('Invalid XML');
+  return doc;
+}
+
+function getElems(doc, tag) {
+  return Array.from(doc.getElementsByTagName(tag));
+}
+
+function getText(el, tag) {
+  const child = el.getElementsByTagName(tag)[0];
+  return child ? child.textContent.trim() : '';
+}
+
+function parseBool(val) {
+  return val === 'true';
+}
+
+function extractObjectPerms(doc) {
+  const map = {};
+  getElems(doc, 'objectPermissions').forEach(el => {
+    const obj = getText(el, 'object');
+    map[obj] = {
+      read: parseBool(getText(el, 'allowRead')),
+      create: parseBool(getText(el, 'allowCreate')),
+      edit: parseBool(getText(el, 'allowEdit')),
+      del: parseBool(getText(el, 'allowDelete')),
+      viewAll: parseBool(getText(el, 'viewAllRecords')),
+      modAll: parseBool(getText(el, 'modifyAllRecords')),
+    };
+  });
+  return map;
+}
+
+function extractFieldPerms(doc) {
+  const map = {};
+  getElems(doc, 'fieldPermissions').forEach(el => {
+    const field = getText(el, 'field');
+    map[field] = {
+      read: parseBool(getText(el, 'readable')),
+      edit: parseBool(getText(el, 'editable')),
+    };
+  });
+  return map;
+}
+
+function extractUserPerms(doc) {
+  const map = {};
+  getElems(doc, 'userPermissions').forEach(el => {
+    const name = getText(el, 'name');
+    map[name] = parseBool(getText(el, 'enabled'));
+  });
+  return map;
+}
+
+function extractApexClasses(doc) {
+  const map = {};
+  getElems(doc, 'classAccesses').forEach(el => {
+    const name = getText(el, 'apexClass');
+    map[name] = parseBool(getText(el, 'enabled'));
+  });
+  return map;
+}
+
+function extractVFPages(doc) {
+  const map = {};
+  getElems(doc, 'pageAccesses').forEach(el => {
+    const name = getText(el, 'apexPage');
+    map[name] = parseBool(getText(el, 'enabled'));
+  });
+  return map;
+}
+
+function extractCustomPerms(doc) {
+  const map = {};
+  getElems(doc, 'customPermissions').forEach(el => {
+    const name = getText(el, 'name');
+    map[name] = parseBool(getText(el, 'enabled'));
+  });
+  return map;
+}
+
+function comparePermMaps(aMap, bMap, isMigration) {
+  const all = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  const rows = [];
+  all.forEach(key => {
+    const inA = key in aMap;
+    const inB = key in bMap;
+    const valA = inA ? aMap[key] : null;
+    const valB = inB ? bMap[key] : null;
+    let status;
+    if (typeof valA === 'object' && valA !== null) {
+      // object perms — compare fields
+      const keys = ['read','create','edit','del','viewAll','modAll'];
+      const diff = inA && inB ? keys.some(k => (valA[k]||false) !== (valB[k]||false)) : false;
+      if (!inA) status = 'only-b';
+      else if (!inB) status = isMigration ? 'missing' : 'only-a';
+      else if (diff) status = 'diff';
+      else status = 'same';
+      rows.push({ key, valA, valB, inA, inB, status, type:'obj' });
+    } else {
+      // boolean perm
+      if (!inA) status = 'only-b';
+      else if (!inB) status = isMigration ? 'missing' : 'only-a';
+      else if (valA !== valB) status = 'diff';
+      else status = 'same';
+      rows.push({ key, valA, valB, inA, inB, status, type:'bool' });
+    }
+  });
+  return rows;
+}
+
+function analyze() {
+  const rawA = document.getElementById('xml-a').value.trim();
+  const rawB = document.getElementById('xml-b').value.trim();
+  const errBox = document.getElementById('error-box');
+  errBox.style.display = 'none';
+
+  if (!rawA || !rawB) {
+    errBox.textContent = 'Please paste XML in both panels before analyzing.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  let docA, docB;
+  try { docA = parseXML(rawA); } catch(e) {
+    errBox.textContent = 'Left panel: ' + e.message;
+    errBox.style.display = 'block'; return;
+  }
+  try { docB = parseXML(rawB); } catch(e) {
+    errBox.textContent = 'Right panel: ' + e.message;
+    errBox.style.display = 'block'; return;
+  }
+
+  // Detect types
+  const typeA = detectType(rawA) || 'Unknown';
+  const typeB = detectType(rawB) || 'Unknown';
+  const elA = document.getElementById('type-a');
+  const elB = document.getElementById('type-b');
+  elA.textContent = typeA; elA.className = 'panel-type detected';
+  elB.textContent = typeB; elB.className = 'panel-type detected';
+
+  const isMigration = currentMode === 'migration';
+
+  // Extract
+  const objA = extractObjectPerms(docA), objB = extractObjectPerms(docB);
+  const fldA = extractFieldPerms(docA), fldB = extractFieldPerms(docB);
+  const usrA = extractUserPerms(docA), usrB = extractUserPerms(docB);
+  const apxA = extractApexClasses(docA), apxB = extractApexClasses(docB);
+  const vfA = extractVFPages(docA), vfB = extractVFPages(docB);
+  const cpA = extractCustomPerms(docA), cpB = extractCustomPerms(docB);
+
+  // Compare
+  const objRows = comparePermMaps(objA, objB, isMigration);
+  const fldRows = comparePermMaps(fldA, fldB, isMigration);
+  const usrRows = comparePermMaps(usrA, usrB, isMigration);
+  const apxRows = comparePermMaps(apxA, apxB, isMigration);
+  const vfRows  = comparePermMaps(vfA, vfB, isMigration);
+  const cpRows  = comparePermMaps(cpA, cpB, isMigration);
+
+  lastResult = { objRows, fldRows, usrRows, apxRows, vfRows, cpRows, typeA, typeB, isMigration };
+
+  renderResults(lastResult);
+}
+
+function countStatus(rows, s) {
+  return rows.filter(r => r.status === s).length;
+}
+
+function allRows(r) {
+  return [...r.objRows, ...r.fldRows, ...r.usrRows, ...r.apxRows, ...r.vfRows, ...r.cpRows];
+}
+
+function renderResults(res) {
+  const { objRows, fldRows, usrRows, apxRows, vfRows, cpRows, isMigration } = res;
+  const all = allRows(res);
+  const total = all.length;
+  const missing = all.filter(r => r.status === 'missing' || r.status === 'only-a').length;
+  const diffs = all.filter(r => r.status === 'diff').length;
+  const same = all.filter(r => r.status === 'same').length;
+  const onlyB = all.filter(r => r.status === 'only-b').length;
+
+  // Summary
+  const sg = document.getElementById('summary-grid');
+  sg.innerHTML = `
+    <div class="stat"><div class="stat-num">${total}</div><div class="stat-lbl">total perms</div></div>
+    <div class="stat"><div class="stat-num c-green">${same}</div><div class="stat-lbl">${isMigration ? 'migrated' : 'identical'}</div></div>
+    <div class="stat"><div class="stat-num c-red">${missing}</div><div class="stat-lbl">${isMigration ? 'not migrated' : 'only in left'}</div></div>
+    <div class="stat"><div class="stat-num c-amber">${diffs}</div><div class="stat-lbl">value differs</div></div>
+  `;
+
+  // Migration bar
+  const mBar = document.getElementById('mig-bar');
+  if (isMigration) {
+    mBar.classList.add('show');
+    const pct = total > 0 ? Math.round((same / (same + missing)) * 100) : 0;
+    document.getElementById('mig-pct').textContent = pct + '%';
+    document.getElementById('mig-fill').style.width = pct + '%';
+    const verdict = pct === 100 ? '✓ All permissions accounted for in the Permission Set' :
+      pct >= 80 ? `${missing} permission(s) still need to be migrated` :
+      `${missing} permissions missing — migration incomplete`;
+    const color = pct === 100 ? 'var(--green)' : pct >= 80 ? 'var(--amber)' : 'var(--red)';
+    document.getElementById('mig-verdict').style.color = color;
+    document.getElementById('mig-verdict').textContent = verdict;
+  } else {
+    mBar.classList.remove('show');
+  }
+
+  // Sections
+  const container = document.getElementById('sections-container');
+  container.innerHTML = '';
+
+  const sections = [
+    { label: 'Object Permissions', rows: objRows, renderRow: renderObjRow },
+    { label: 'Field Permissions', rows: fldRows, renderRow: renderFldRow },
+    { label: 'User Permissions', rows: usrRows, renderRow: renderBoolRow },
+    { label: 'Apex Class Access', rows: apxRows, renderRow: renderBoolRow },
+    { label: 'VF Page Access', rows: vfRows, renderRow: renderBoolRow },
+    { label: 'Custom Permissions', rows: cpRows, renderRow: renderBoolRow },
+  ];
+
+  sections.forEach(sec => {
+    if (sec.rows.length === 0) return;
+    const missing = sec.rows.filter(r => r.status === 'missing' || r.status === 'only-a').length;
+    const diffs = sec.rows.filter(r => r.status === 'diff').length;
+    const countCls = missing > 0 ? 'count-red' : diffs > 0 ? 'count-amber' : 'count-green';
+    const badgeNum = missing > 0 ? missing + ' missing' : diffs > 0 ? diffs + ' diff' : sec.rows.length + ' ok';
+    container.innerHTML += buildSection(sec.label, sec.rows, badgeNum, countCls, sec.renderRow, isMigration);
+  });
+
+  // Bind toggles
+  container.querySelectorAll('.section-head').forEach(h => {
+    h.addEventListener('click', () => {
+      h.closest('.section').classList.toggle('collapsed');
+      h.querySelector('.chevron').textContent = h.closest('.section').classList.contains('collapsed') ? '▶' : '▼';
+    });
+  });
+
+  // Bind filters
+  container.querySelectorAll('.filt').forEach(f => {
+    f.addEventListener('click', function() {
+      const sec = this.closest('.section');
+      sec.querySelectorAll('.filt').forEach(x => x.classList.remove('on'));
+      this.classList.add('on');
+      const filter = this.dataset.f;
+      sec.querySelectorAll('tr[data-status]').forEach(row => {
+        row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+      });
+    });
+  });
+
+  document.getElementById('results').style.display = 'block';
+}
+
+function buildSection(label, rows, badgeNum, badgeCls, renderRow, isMigration) {
+  const rowsHTML = rows.map(r => renderRow(r, isMigration)).join('');
+  const labelA = isMigration ? 'Profile' : 'Left';
+  const labelB = isMigration ? 'Perm Set' : 'Right';
+
+  return `
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        ${label}
+        <span class="section-count ${badgeCls}">${badgeNum}</span>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="filter-bar">
+        <button class="filt on" data-f="all">all</button>
+        <button class="filt" data-f="missing">missing</button>
+        <button class="filt" data-f="diff">diff</button>
+        <button class="filt" data-f="same">same</button>
+        <button class="filt" data-f="only-b">only in B</button>
+      </div>
+      <table class="perm-table">
+        <thead><tr>
+          <th>Permission</th>
+          <th>${labelA}</th>
+          <th>${labelB}</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function statusPill(status, isMigration) {
+  if (status === 'same') return '<span class="status-pill pill-same">same</span>';
+  if (status === 'missing') return '<span class="status-pill pill-missing">not migrated</span>';
+  if (status === 'only-a') return '<span class="status-pill pill-missing">only in A</span>';
+  if (status === 'only-b') return '<span class="status-pill pill-partial">only in B</span>';
+  if (status === 'diff') return '<span class="status-pill pill-diff">value diff</span>';
+  return '';
+}
+
+function boolVal(v, inSet) {
+  if (!inSet) return '<span class="val-missing">—</span>';
+  return v ? '<span class="val-yes">✓</span>' : '<span class="val-no">✗</span>';
+}
+
+function renderBoolRow(r, isMigration) {
+  return `<tr data-status="${r.status}">
+    <td class="name-cell">${esc(r.key)}</td>
+    <td>${boolVal(r.valA, r.inA)}</td>
+    <td>${boolVal(r.valB, r.inB)}</td>
+    <td>${statusPill(r.status, isMigration)}</td>
+  </tr>`;
+}
+
+function renderObjRow(r, isMigration) {
+  const fields = ['read','create','edit','del','viewAll','modAll'];
+  const aStr = r.inA ? fields.map(f => r.valA[f] ? f[0].toUpperCase() : '·').join(' ') : '—';
+  const bStr = r.inB ? fields.map(f => r.valB[f] ? f[0].toUpperCase() : '·').join(' ') : '—';
+  const aCls = r.inA ? 'val-yes' : 'val-missing';
+  const bCls = r.inB ? (r.status === 'diff' ? 'val-diff' : 'val-yes') : 'val-missing';
+  return `<tr data-status="${r.status}">
+    <td class="name-cell">${esc(r.key)}<div class="sub-name">R C E D VA MA</div></td>
+    <td class="${aCls}" style="font-size:10px;letter-spacing:2px">${r.inA ? aStr : '—'}</td>
+    <td class="${bCls}" style="font-size:10px;letter-spacing:2px">${r.inB ? bStr : '—'}</td>
+    <td>${statusPill(r.status, isMigration)}</td>
+  </tr>`;
+}
+
+function renderFldRow(r, isMigration) {
+  const aStr = r.inA ? `${r.valA.read?'R':'·'} ${r.valA.edit?'E':'·'}` : '—';
+  const bStr = r.inB ? `${r.valB.read?'R':'·'} ${r.valB.edit?'E':'·'}` : '—';
+  const aCls = r.inA ? 'val-yes' : 'val-missing';
+  const bCls = r.inB ? (r.status === 'diff' ? 'val-diff' : 'val-yes') : 'val-missing';
+  return `<tr data-status="${r.status}">
+    <td class="name-cell">${esc(r.key)}<div class="sub-name">R=read E=edit</div></td>
+    <td class="${aCls}" style="font-size:11px;letter-spacing:2px">${aStr}</td>
+    <td class="${bCls}" style="font-size:11px;letter-spacing:2px">${bStr}</td>
+    <td>${statusPill(r.status, isMigration)}</td>
+  </tr>`;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function loadSample() {
+  const profileXML = `<?xml version="1.0" encoding="UTF-8"?>
+<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Account</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Contact</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Opportunity</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account.AnnualRevenue</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Email</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewSetup</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>RunReports</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>false</enabled>
+        <name>ManageUsers</name>
+    </userPermissions>
+    <classAccesses>
+        <apexClass>AccountController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ReportHelper</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+</Profile>`;
+
+  const permsetXML = `<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Account</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Contact</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.AnnualRevenue</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewSetup</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>RunReports</name>
+    </userPermissions>
+    <classAccesses>
+        <apexClass>AccountController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+</PermissionSet>`;
+
+  document.getElementById('xml-a').value = profileXML;
+  document.getElementById('xml-b').value = permsetXML;
+  if (currentMode !== 'migration') setMode('migration');
+  analyze();
+}
+
+function exportCSV() {
+  if (!lastResult) return;
+  const sections = [
+    { label:'ObjectPerms', rows: lastResult.objRows },
+    { label:'FieldPerms', rows: lastResult.fldRows },
+    { label:'UserPerms', rows: lastResult.usrRows },
+    { label:'ApexClasses', rows: lastResult.apxRows },
+    { label:'VFPages', rows: lastResult.vfRows },
+    { label:'CustomPerms', rows: lastResult.cpRows },
+  ];
+  let csv = 'Section,Permission,In_A,In_B,Status\n';
+  sections.forEach(sec => {
+    sec.rows.forEach(r => {
+      csv += `${sec.label},${r.key},${r.inA},${r.inB},${r.status}\n`;
+    });
+  });
+  download('sf-permission-diff.csv', csv, 'text/csv');
+}
+
+function exportJSON() {
+  if (!lastResult) return;
+  download('sf-permission-diff.json', JSON.stringify(lastResult, null, 2), 'application/json');
+}
+
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  a.click();
+}
+</script>
+</body>
+</html>
