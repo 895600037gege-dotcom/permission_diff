@@ -859,7 +859,7 @@ function buildSection(label, rows, badgeNum, badgeCls, renderRow, isMigration) {
         <button class="filt" data-f="missing">missing</button>
         <button class="filt" data-f="diff">diff</button>
         <button class="filt" data-f="same">same</button>
-        <button class="filt" data-f="only-b">only in B</button>
+        <button class="filt" data-f="only-b">new in PermSet / only Right</button>
       </div>
       <table class="perm-table">
         <thead><tr>
@@ -877,8 +877,8 @@ function buildSection(label, rows, badgeNum, badgeCls, renderRow, isMigration) {
 function statusPill(status, isMigration) {
   if (status === 'same') return '<span class="status-pill pill-same">same</span>';
   if (status === 'missing') return '<span class="status-pill pill-missing">not migrated</span>';
-  if (status === 'only-a') return '<span class="status-pill pill-missing">only in A</span>';
-  if (status === 'only-b') return '<span class="status-pill pill-partial">only in B</span>';
+  if (status === 'only-a') return isMigration ? '<span class="status-pill pill-missing">not in PermSet</span>' : '<span class="status-pill pill-missing">only in Left</span>';
+  if (status === 'only-b') return isMigration ? '<span class="status-pill pill-partial">new in PermSet</span>' : '<span class="status-pill pill-partial">only in Right</span>';
   if (status === 'diff') return '<span class="status-pill pill-diff">value diff</span>';
   return '';
 }
